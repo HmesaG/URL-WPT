@@ -1,0 +1,19 @@
+# Carpetas de compilación / publicación
+Publish_API/
+Publish_Web/
+WPTServiciosDGII/bin/
+WPTServiciosDGII/obj/
+WPTServiciosDGII/publish/
+
+# Certificados y llaves (¡Por seguridad no se suben al repo!)
+*.p12
+*.pfx
+*.cer
+*.key
+
+# Archivos temporales o de pruebas XML
+*.xml
+
+# Archivos de configuración locales
+# appsettings.json
+# appsettings.Development.json

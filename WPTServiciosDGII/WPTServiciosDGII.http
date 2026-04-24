@@ -1,0 +1,6 @@
+@WPTServiciosDGII_HostAddress = http://localhost:5190
+
+GET {{WPTServiciosDGII_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

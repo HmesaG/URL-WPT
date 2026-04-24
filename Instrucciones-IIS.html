@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Instrucciones de Despliegue en IIS</title>
+    <style>
+        :root {
+            --primary: #8b5cf6;
+            --bg-dark: #121212;
+            --bg-card: #1e1e1e;
+            --text: #f3f4f6;
+            --accent: #a78bfa;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text);
+            line-height: 1.6;
+            margin: 0;
+            padding: 40px 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: var(--bg-card);
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+        h1 {
+            color: var(--accent);
+            text-align: center;
+            border-bottom: 2px solid var(--primary);
+            padding-bottom: 10px;
+        }
+        h2 {
+            color: var(--primary);
+            margin-top: 30px;
+            display: flex;
+            align-items: center;
+        }
+        .step {
+            background: rgba(0, 0, 0, 0.4);
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid var(--primary);
+        }
+        ul {
+            list-style-type: none;
+            padding-left: 0;
+        }
+        li {
+            margin-bottom: 15px;
+            padding-left: 20px;
+            position: relative;
+        }
+        li::before {
+            content: '📌';
+            position: absolute;
+            left: 0;
+        }
+        .code, .path {
+            background-color: #2d2d2d;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-family: Consolas, monospace;
+            color: #ffb86c;
+            border: 1px solid #444;
+        }
+        .alert {
+            background-color: rgba(239, 68, 68, 0.1);
+            border: 1px solid #ef4444;
+            color: #fca5a5;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        a {
+            color: #60a5fa;
+            text-decoration: none;
+            font-weight: bold;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Guía de Despliegue para IIS (URL WPT)</h1>
+        
+        <div class="alert">
+            <strong>Requisito Fundamental:</strong> 
+            Asegúrate de que tu servidor IIS tiene instalado el <a href="https://dotnet.microsoft.com/en-us/download/dotnet/8.0" target="_blank">.NET Core 8 Hosting Bundle</a>. Si no lo tienes, el servidor IIS devolverá un error <em>HTTP 500.19</em> en el Backend.
+        </div>
+
+        <div class="step">
+            <h2>🌍 Fase 1: Configurar el Backend (Servicios DGII)</h2>
+            <p>La API que se comunica con la DGII y expone los servicios web.</p>
+            <ul>
+                <li>Abre el Administrador de Internet Information Services (Ejecutar > <span class="code">inetmgr</span>).</li>
+                <li>Haz clic derecho en <strong>Grupos de aplicaciones</strong> (App Pools) y selecciona <strong>Agregar grupo de aplicaciones</strong>.
+                    <ul>
+                        <li><strong>Nombre:</strong> <span class="code">WptApiPool</span></li>
+                        <li><strong>Versión de .NET CLR:</strong> <span class="code">Sin código administrado</span> (No Managed Code). <em>¡Esto es vital para .NET Core 8!</em></li>
+                    </ul>
+                </li>
+                <li>Ve a <strong>Sitios</strong>, haz clic derecho y selecciona <strong>Agregar sitio web...</strong></li>
+                <li>Aplica la siguiente configuración:
+                    <ul>
+                        <li><strong>Nombre del sitio:</strong> <span class="code">WPT_Servicios_DGII</span></li>
+                        <li><strong>Grupo de aplicaciones:</strong> Pólmalo a <span class="code">WptApiPool</span></li>
+                        <li><strong>Ruta de acceso física:</strong> <span class="path">e:\Empresas\GMV\Proyectos Antigravity\URL WPT\Publish_API</span></li>
+                        <li><strong>Puerto (Binding):</strong> Asígnale el puerto / dominio de despliegue principal.</li>
+                    </ul>
+                </li>
+            </ul>
+        </div>
+
+        <div class="step">
+            <h2>💻 Fase 2: Configurar el Frontend (Manager Web)</h2>
+            <p>El portal web de pruebas (Aplicativo Frontend).</p>
+            <ul>
+                <li>Volviendo al apartado de <strong>Sitios</strong> en IIS, haz clic derecho y selecciona <strong>Agregar sitio web...</strong></li>
+                <li>Aplica la siguiente configuración:
+                    <ul>
+                        <li><strong>Nombre del sitio:</strong> <span class="code">WPT_Manager_Web</span></li>
+                        <li><strong>Grupo de aplicaciones:</strong> Puedes elegir el <span class="code">DefaultAppPool</span> (No afecta a los estáticos de React).</li>
+                        <li><strong>Ruta de acceso física:</strong> <span class="path">e:\Empresas\GMV\Proyectos Antigravity\URL WPT\Publish_Web</span></li>
+                        <li><strong>Puerto (Binding):</strong> Asígnale un puerto distinto (Por ejemplo el puerto 80) o subdominio particular.</li>
+                    </ul>
+                </li>
+            </ul>
+        </div>
+
+        <div style="text-align: center; margin-top: 30px; color: var(--text-muted); font-size: 0.9em;">
+            <p>Generado automáticamente con ❤ por Antigravity</p>
+        </div>
+    </div>
+
+</body>
+</html>
