@@ -1,0 +1,95 @@
+================================================================================
+PLAN DE TRABAJO: INTEGRACIÓN DINÁMICA DE BD EXTERNA Y CERTIFICADOS PARA URL-WPT
+================================================================================
+
+OBJETIVO PRINCIPAL
+------------------
+Mejorar y extender el repositorio URL-WPT (WPTServiciosDGII) para:
+1. Conectar dinámicamente a bases de datos externas (sin hardcodear credenciales).
+2. Consultar la tabla Nucleo por RNCComprador recibido desde el servicio DGII.
+3. Cargar y utilizar certificados .p12 de forma segura por cada petición.
+4. Aplicar política Fail-Fast ante falta o error de certificado.
+5. Mantener la arquitectura existente y permitir configuración sin recompilar.
+
+REQUISITOS PREVIOS
+------------------
+- .NET 8 SDK instalado (verificar con: dotnet --version)
+- Editor: Visual Studio 2022 o VS Code con extensión C#
+- Acceso de solo lectura a la BD externa (tabla Nucleo)
+- Archivos .p12 de prueba en ruta accesible por el servidor
+- Postman / Insomnia / cURL para pruebas HTTP
+- Repositorio clonado localmente (git clone https://github.com/HmesaG/URL-WPT.git)
+
+FASES DE IMPLEMENTACIÓN
+-----------------------
+
+FASE 0: PREPARACIÓN Y CONFIGURACIÓN BASE
+Objetivo: Adaptar la estructura actual para soportar configuración externa y dependencias.
+Archivos a modificar/crear:
+  - appsettings.json (secciones: DynamicDatabases, ExternalDbConfig)
+  - WPTServiciosDGII.csproj (paquetes: Dapper, Polly, Microsoft.Extensions.Caching.Memory)
+  - Program.cs (registro básico de configuración)
+Criterio de Aprobación: dotnet run inicia sin errores y lee la configuración correctamente.
+
+FASE 1: RESOLUCIÓN DINÁMICA DE BASE DE DATOS
+Objetivo: Permitir registrar y cambiar la BD externa en tiempo de ejecución.
+Archivos a crear:
+  - Core/Interfaces/IDbResolver.cs
+  - Infrastructure/Data/DynamicDbResolver.cs
+  - Api/Controllers/AdminController.cs (opcional)
+Criterio de Aprobación: POST /api/admin/register-db registra una BD y GET /api/health confirma conexión.
+
+FASE 2: SERVICIO DE CONSULTA A TABLA NUCLEO
+Objetivo: Consultar Nucleo por RNC con nombres de columnas configurables.
+Archivos a crear:
+  - Core/Dto/NucleoExternoDto.cs
+  - Infrastructure/External/NucleoRepository.cs
+  - Actualización de appsettings.json (mapeo de columnas)
+Criterio de Aprobación: Envío de header X-Db-Tenant + RNC retorna JSON con ruta y contraseña del certificado.
+
+FASE 3: CARGADOR DE CERTIFICADOS .P12 (ROTACIÓN POR PETICIÓN)
+Objetivo: Cargar certificado solo durante la firma, sin caché, con liberación inmediata.
+Archivos a crear:
+  - Core/Interfaces/ICertificadoLoader.cs
+  - Infrastructure/Security/CertificadoLoader.cs
+Criterio de Aprobación: Carga en <5ms, falla rápido si datos son inválidos, no deja recursos abiertos.
+
+FASE 4: ENDPOINT DE RECEPCIÓN INTEGRADO
+Objetivo: Unir todos los componentes en el flujo de recepción DGII existente.
+Archivos a modificar/crear:
+  - Api/Controllers/RecepcionController.cs (o adaptar existente)
+  - Core/Dto/EcfRecepcionRequest.cs / EcfRecepcionResponse.cs
+Criterio de Aprobación: POST /api/recepcion/recibir retorna 200 OK con NCF, o 400/500 con mensaje claro si falla.
+
+FASE 5: PRUEBAS, DOCUMENTACIÓN Y DESPLIEGUE
+Objetivo: Validar entorno real y documentar para operación sin código.
+Archivos a crear:
+  - PRUEBAS.md (guía paso a paso)
+  - TROUBLESHOOTING.md (errores comunes y solución)
+  - CHECKLIST_SEGURIDAD.md (permisos, usuario SQL, rotación)
+Criterio de Aprobación: Todas las pruebas pasan, se pueden registrar nuevas BD sin reiniciar, deploy a IIS funciona.
+
+PRINCIPIOS DE SEGURIDAD Y CUMPLIMIENTO
+---------------------------------------
+- No hardcodear BD: Uso de DynamicDbResolver + header X-Db-Tenant
+- No loggear credenciales: Passwords de .p12 nunca se imprimen
+- Fail-Fast fiscal: Si el certificado falta/falla -> 400 Bad Request
+- Sin caché de certificados: Carga por petición + Dispose explícito
+- Query segura: Parámetros @Rnc / @Estado (inmunidad a SQLi)
+- Permisos mínimos: Usuario SQL con solo db_datareader en tabla Nucleo
+
+FLUJO DE TRABAJO (IA + USUARIO)
+-------------------------------
+1. Confirmas fase actual: Respondes "✅ FASE X OK, CONTINÚA CON FASE Y"
+2. IA entrega: Archivos exactos con ruta, código completo y comando de validación.
+3. Tú ejecutas: Copias, compilas, pruebas con Postman/cURL.
+4. Validas criterio: Si pasa, confirmas. Si falla, envías el error para ajuste.
+5. Repetimos hasta Fase 5.
+
+PRÓXIMOS PASOS
+---------------
+1. Confirma que tienes los Requisitos Previos listos.
+2. Indica si ya tienes los nombres exactos de las columnas para ruta y contraseña del .p12 en Nucleo, o responde "usa genéricos por ahora".
+3. Responde con: ✅ INICIAR FASE 0
+
+================================================================================

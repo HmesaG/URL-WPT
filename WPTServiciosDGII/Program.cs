@@ -1,5 +1,9 @@
 using Microsoft.EntityFrameworkCore;
+using WPTServiciosDGII.Core.Interfaces;
 using WPTServiciosDGII.Data;
+using WPTServiciosDGII.Infrastructure.Data;
+using WPTServiciosDGII.Infrastructure.External;
+using WPTServiciosDGII.Infrastructure.Security;
 using WPTServiciosDGII.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -23,6 +27,18 @@ builder.Services.AddSwaggerGen(c =>
 // ── Entity Framework Core — SQL Server ───────────────────────────────────────
 builder.Services.AddDbContext<WptDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("WptDatabase")));
+
+// ── FASE 0: Memory Cache ──────────────────────────────────────────────────────
+builder.Services.AddMemoryCache();
+
+// ── FASE 1: Resolución dinámica de BD externa ─────────────────────────────────
+builder.Services.AddSingleton<IDbResolver, DynamicDbResolver>();
+
+// ── FASE 2: Repositorio Nucleo externo ────────────────────────────────────────
+builder.Services.AddScoped<INucleoRepository, NucleoRepository>();
+
+// ── FASE 3: Cargador de certificados .p12 ────────────────────────────────────
+builder.Services.AddTransient<ICertificadoLoader, CertificadoLoader>();
 
 // ── Servicios propios ─────────────────────────────────────────────────────────
 builder.Services.AddScoped<ILogInteraccionService, LogInteraccionService>();
@@ -87,16 +103,19 @@ app.UseCors("DgiiServers");   // Aplicar CORS permisivo para que DGII pueda llam
 app.UseAuthorization();
 app.MapControllers();
 
-// ── Health check rápido ───────────────────────────────────────────────────────
-app.MapGet("/health", () => Results.Ok(new
+// ── Health check con estado de configuración ──────────────────────────────────
+app.MapGet("/health", (IConfiguration config) =>
 {
-    status  = "healthy",
-    time    = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
-    domains = new[]
+    var tenants  = config.GetSection("ExternalDbConfig:Tenants").GetChildren().Select(t => t.Key).ToList();
+    var certPath = config["CertificadosConfig:RutaBase"];
+    return Results.Ok(new
     {
-        "https://cloud.wptsoftwares.net",
-        "https://wptsoftwares.giize.com/WPTexecutor"
-    }
-}));
+        status   = "healthy",
+        time     = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
+        domains  = new[] { "https://cloud.wptsoftwares.net", "https://wptsoftwares.giize.com/WPTexecutor" },
+        tenants_registrados = tenants,
+        ruta_certificados   = certPath
+    });
+});
 
 app.Run();
