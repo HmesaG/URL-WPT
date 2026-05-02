@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Administración WPT - Multi-Model API</title>
+    <style>
+        :root {
+            --primary: #0078d4;
+            --secondary: #2b88d8;
+            --bg: #f3f2f1;
+            --card: #ffffff;
+            --text: #323130;
+            --code-bg: #252526;
+            --code-text: #d4d4d4;
+            --success: #107c10;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        header {
+            background: linear-gradient(135deg, #004578, #0078d4);
+            color: white;
+            padding: 30px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        h1 { margin: 0; font-size: 24px; }
+        .subtitle { opacity: 0.9; font-size: 14px; }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .card {
+            background: var(--card);
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            border-top: 4px solid var(--primary);
+        }
+
+        h2 { color: var(--primary); font-size: 18px; margin-top: 0; }
+
+        .endpoint {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 10px;
+            border-left: 4px solid var(--secondary);
+        }
+
+        .method {
+            font-weight: bold;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 3px;
+            font-size: 12px;
+            margin-right: 10px;
+        }
+
+        .get { background: var(--success); }
+        .post { background: var(--primary); }
+
+        pre {
+            background: var(--code-bg);
+            color: var(--code-text);
+            padding: 15px;
+            border-radius: 6px;
+            font-size: 13px;
+            overflow-x: auto;
+        }
+
+        .links a {
+            display: block;
+            color: var(--primary);
+            text-decoration: none;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+
+        .links a:hover { text-decoration: underline; }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+
+        .badge-staging { background: #fff4ce; color: #797775; }
+        .badge-prod { background: #dff6dd; color: #107c10; }
+
+        .footer {
+            text-align: center;
+            margin-top: 40px;
+            font-size: 12px;
+            color: #605e5c;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Guía de Administración - WPT API</h1>
+            <p class="subtitle">Gestión Dinámica de Modelos e-CF y Bases de Datos</p>
+        </header>
+
+        <div class="grid">
+            <!-- Columna 1: Instancias -->
+            <div class="card">
+                <h2>🌐 Instancias Activas</h2>
+                <div class="links">
+                    <p><strong>Laboratorio (Staging):</strong></p>
+                    <a href="https://cloud.wptsoftwares.net/WPTexecutor/swagger/index.html" target="_blank">🔗 WPTExecutor - Swagger UI</a>
+                    <span class="badge badge-staging">MODELO DE PRUEBAS</span>
+                    
+                    <hr style="margin: 20px 0; border: 0; border-top: 1px solid #eee;">
+                    
+                    <p><strong>Producción:</strong></p>
+                    <a href="https://cloud.wptsoftwares.net/eXcomercial/swagger/index.html" target="_blank">🔗 eXcomercial - Swagger UI</a>
+                    <span class="badge badge-prod">MODELO DEFINITIVO</span>
+                </div>
+            </div>
+
+            <!-- Columna 2: Administración API -->
+            <div class="card">
+                <h2>🛠️ Admin API (Endpoints)</h2>
+                <p style="font-size: 13px;">Usa estos endpoints en Swagger para cambiar la configuración en caliente:</p>
+                
+                <div class="endpoint">
+                    <span class="method get">GET</span> <code>/api/admin/config</code>
+                    <p style="font-size: 11px; margin: 5px 0 0;">Ver base de datos actual de la instancia.</p>
+                </div>
+
+                <div class="endpoint">
+                    <span class="method post">POST</span> <code>/api/admin/database</code>
+                    <p style="font-size: 11px; margin: 5px 0 0;">Actualizar cadenas de conexión dinámicamente.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Fila 2: Cómo cambiar la BD -->
+        <div class="card" style="margin-top: 20px;">
+            <h2>💾 Cómo cambiar la Base de Datos de un Modelo</h2>
+            <p>Envía un <strong>POST</strong> al endpoint <code>/api/admin/database</code> con este formato:</p>
+            <pre>
+{
+  "instanceName": "Nombre-de-la-Instancia",
+  "mainConnectionString": "Server=WPT-SERVER;Database=NUEVA_BD;User Id=sa;...",
+  "externalConnectionString": "Server=WPT-SERVER;Database=BD_COMERCIAL;..."
+}</pre>
+            <p style="font-size: 13px; color: #666;"><em>El sistema guardará el cambio en el appsettings.json local y reiniciará la instancia automáticamente.</em></p>
+        </div>
+
+        <!-- Fila 3: Skill de Replicación -->
+        <div class="card" style="margin-top: 20px; border-top-color: #107c10;">
+            <h2>🚀 Flujo de Réplica (Skill)</h2>
+            <ol style="font-size: 14px;">
+                <li>Realiza cambios en <strong>WPTExecutor</strong> y valida.</li>
+                <li>Para replicar a producción, abre PowerShell (Admin) y ejecuta:</li>
+            </ol>
+            <pre>.\Tools\Promocionar-Cambios.ps1 -Destino "eXcomercial"</pre>
+            <p style="font-size: 13px;">Este comando sincroniza los binarios pero <strong>respeta la base de datos</strong> de producción.</p>
+        </div>
+
+        <div class="footer">
+            Panel generado por Antigravity AI - 2026 &copy; Proyectos WPT
+        </div>
+    </div>
+</body>
+</html>
