@@ -16,10 +16,12 @@ Este Skill define el flujo de trabajo obligatorio para mantener la integridad de
   `https://cloud.wptsoftwares.net/WPTexecutor/swagger/index.html`
 - Se realizan pruebas de recepción de e-CF y firma digital.
 
-### 3. Promoción (Réplica)
-- Una vez verificado, se utiliza el script de promoción para llevar los binarios a los modelos productivos.
-- **Comando:** `.\Tools\Promocionar-Cambios.ps1 -Destino "eXcomercial"`
-- **Regla de Oro:** Nunca sobreescribir el `appsettings.json` de un modelo productivo para preservar su conexión a base de datos específica.
+### 3. Promoción (Réplica y Automatización)
+- Una vez verificado, se utiliza el script de promoción:
+  `.\Tools\Promocionar-Cambios.ps1 -Destino "NuevoModelo"`
+- **Este script ahora realiza dos tareas:**
+    1. Replicar los binarios (DLLs) respetando el `appsettings.json`.
+    2. Generar/Actualizar la aplicación en el IIS automáticamente si se ejecuta con permisos.
 
 ### 4. Configuración Post-Réplica
 - Si se crea un nuevo modelo, se debe usar el **Admin API** para establecer su nombre de instancia y base de datos:

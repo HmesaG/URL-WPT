@@ -32,4 +32,20 @@ if (-not (Test-Path (Join-Path $targetPath "appsettings.json"))) {
     Write-Host "[!] Archivo appsettings.json creado. Recuerda configurar la instancia '$Destino' vía API." -ForegroundColor Yellow
 }
 
-Write-Host "[OK] Réplica completada con éxito." -ForegroundColor Green
+# 3. Configuración automática de IIS (Requiere privilegios de Admin)
+Write-Host "`n--- Configurando infraestructura en IIS ---" -ForegroundColor Cyan
+try {
+    Import-Module WebAdministration -ErrorAction Stop
+    $siteName = "cloud.wptsoftwares.net"
+    if (-not (Test-Path "IIS:\Sites\$siteName\$Destino")) {
+        New-WebApplication -Name $Destino -Site $siteName -PhysicalPath $targetPath -ApplicationPool $siteName
+        Write-Host "[OK] Nueva aplicación '$Destino' creada en IIS." -ForegroundColor Green
+    } else {
+        Set-ItemProperty "IIS:\Sites\$siteName\$Destino" -name physicalPath -value $targetPath
+        Write-Host "[OK] Aplicación '$Destino' actualizada en IIS." -ForegroundColor Green
+    }
+} catch {
+    Write-Host "[!] No se pudo configurar IIS automáticamente. Por favor, ejecuta este script como ADMINISTRADOR." -ForegroundColor Red
+}
+
+Write-Host "[OK] Proceso finalizado." -ForegroundColor Green
