@@ -1,17 +1,20 @@
 # Carpetas de compilación / publicación
 Publish_API/
 Publish_Web/
+publish-prod/
 WPTServiciosDGII/bin/
 WPTServiciosDGII/obj/
 WPTServiciosDGII/publish/
 
 # Certificados y llaves (¡Por seguridad no se suben al repo!)
+Certificados_Local/
 *.p12
 *.pfx
 *.cer
 *.key
 
 # Archivos temporales o de pruebas XML
+Tests/Samples/
 *.xml
 
 # Archivos de configuración locales
