@@ -16,15 +16,29 @@ Este Skill define el flujo de trabajo obligatorio para mantener la integridad de
   `https://cloud.wptsoftwares.net/WPTexecutor/swagger/index.html`
 - Se realizan pruebas de recepción de e-CF y firma digital.
 
-### 3. Promoción (Réplica y Automatización)
-- Una vez verificado, se utiliza el script de promoción:
-  `.\Tools\Promocionar-Cambios.ps1 -Destino "NuevoModelo"`
-- **Este script ahora realiza dos tareas:**
-    1. Replicar los binarios (DLLs) respetando el `appsettings.json`.
-    2. Generar/Actualizar la aplicación en el IIS automáticamente si se ejecuta con permisos.
+### 3. Promoción a Producción o Nuevos Modelos
+- Una vez validado en WPTExecutor, se utiliza el script `Tools/Promocionar-Cambios.ps1` para replicar los binarios a `eXcomercial` u otros destinos.
+- **IMPORTANTE**: No olvidar actualizar el `InstanceName` en el `appsettings.json` de la nueva carpeta.
 
-### 4. Configuración Post-Réplica
-- Si se crea un nuevo modelo, se debe usar el **Admin API** para establecer su nombre de instancia y base de datos:
+## Infraestructura y Despliegue (IIS)
+
+Para registrar las carpetas en el servidor web, se debe utilizar el script `Tools/Configurar_IIS_WPT.ps1`.
+
+### Uso Estándar (Automático)
+Simplemente haz clic derecho y **"Ejecutar con PowerShell"** para sincronizar WPTExecutor y eXcomercial.
+
+### Uso con Parámetros (Nuevos Modelos)
+Si deseas crear un modelo nuevo (ej. `ClienteNuevo`), abre una terminal de PowerShell como Administrador y ejecuta:
+
+```powershell
+.\Tools\Configurar_IIS_WPT.ps1 -InstanceName "ClienteNuevo" -PhysicalPath "C:\Ruta\Al\Proyecto"
+```
+
+## Reglas de Oro
+1. **NUNCA** editar el código directamente en las carpetas de publicación (`WPTExecutor`, `eXcomercial`).
+2. **SIEMPRE** ejecutar el script de configuración de IIS tras crear una nueva carpeta de modelo.
+3. **VALIDAR** que el Swagger de cada instancia muestre el `InstanceName` correcto en la descripción.
+ API** para establecer su nombre de instancia y base de datos:
   `POST /api/admin/database`
 
 ## Mantenimiento de Archivos

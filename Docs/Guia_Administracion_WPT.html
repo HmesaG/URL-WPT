@@ -124,6 +124,36 @@
             <p class="subtitle">Gestión Dinámica de Modelos e-CF y Bases de Datos</p>
         </header>
 
+        <section class="section-card" style="margin-bottom: 20px;">
+            <div class="section-header">
+                <h2>Configuración de Infraestructura (IIS)</h2>
+            </div>
+            <p>Para que los cambios de código o los nuevos modelos sean visibles en la web, deben estar registrados en el IIS.</p>
+            
+            <div class="command-box">
+                <div class="command-header">
+                    <span>Script de Sincronización</span>
+                    <span class="badge">PowerShell</span>
+                </div>
+                <div class="command-content">
+                    <code>.\Tools\Configurar_IIS_WPT.ps1</code>
+                </div>
+            </div>
+
+            <h3 style="margin-top: 1.5rem; color: var(--primary);">Modos de Ejecución</h3>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1rem;">
+                <div style="background: #f8f9fa; padding: 1rem; border-radius: 8px;">
+                    <strong style="display: block; margin-bottom: 0.5rem; color: var(--secondary);">Modo Automático</strong>
+                    <p style="font-size: 0.9rem; color: #555;">Clic derecho > Ejecutar con PowerShell. Sincroniza WPTExecutor y eXcomercial automáticamente.</p>
+                </div>
+                <div style="background: #f8f9fa; padding: 1rem; border-radius: 8px;">
+                    <strong style="display: block; margin-bottom: 0.5rem; color: var(--accent);">Modo Manual (Parámetros)</strong>
+                    <p style="font-size: 0.9rem; color: #555;">Para nuevos modelos. Ejecuta en consola:</p>
+                    <code style="font-size: 0.75rem; background: #333; color: #fff; padding: 5px; display: block; margin-top: 5px;">-InstanceName "Nuevo" -PhysicalPath "C:\Ruta"</code>
+                </div>
+            </div>
+        </section>
+
         <div class="grid">
             <!-- Columna 1: Instancias -->
             <div class="card">

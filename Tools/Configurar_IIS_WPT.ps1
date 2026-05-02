@@ -1,31 +1,48 @@
+param(
+    [string]$InstanceName = "",
+    [string]$PhysicalPath = ""
+)
+
 # Script para configurar IIS - WPTExecutor y eXcomercial
 # EJECUTAR COMO ADMINISTRADOR
 
-Import-Module WebAdministration
+Import-Module WebAdministration -ErrorAction SilentlyContinue
 
 $siteName = "cloud.wptsoftwares.net"
 $basePath = "e:\Empresas\GMV\Proyectos Antigravity\URL WPT"
 
 Write-Host "--- Configurando IIS para WPT ---" -ForegroundColor Cyan
 
-# 1. Actualizar WPTexecutor
-$wptPath = Join-Path $basePath "WPTExecutor"
-if (Test-Path "IIS:\Sites\$siteName\WPTexecutor") {
-    Set-ItemProperty "IIS:\Sites\$siteName\WPTexecutor" -name physicalPath -value $wptPath
-    Write-Host "[OK] WPTexecutor actualizado a: $wptPath" -ForegroundColor Green
-} else {
-    Write-Host "[!] No se encontró la aplicación WPTexecutor en el sitio $siteName" -ForegroundColor Yellow
+# Definir ruta de appcmd
+$appcmd = "C:\Windows\System32\inetsrv\appcmd.exe"
+
+# Función para procesar una instancia usando appcmd
+function Configure-WptInstance {
+    param($name, $path)
+    
+    if (-not $path) { $path = Join-Path $basePath $name }
+    
+    Write-Host "Configurando instancia: $name en $path..." -ForegroundColor White
+
+    # Intentar añadir la aplicación (si falla porque ya existe, la actualizamos)
+    & $appcmd add app /site.name:"$siteName" /path:"/$name" /physicalPath:"$path" /applicationPool:"$siteName" 2>$null
+    
+    if ($LASTEXITCODE -ne 0) {
+        # Si ya existe, actualizamos su ruta física
+        & $appcmd set app "$siteName/$name" /physicalPath:"$path"
+        Write-Host "[OK] Aplicación $name actualizada con appcmd." -ForegroundColor Green
+    } else {
+        Write-Host "[OK] Aplicación $name creada con appcmd." -ForegroundColor Green
+    }
 }
 
-# 2. Crear o actualizar eXcomercial
-$exPath = Join-Path $basePath "eXcomercial"
-if (-not (Test-Path "IIS:\Sites\$siteName\eXcomercial")) {
-    New-WebApplication -Name "eXcomercial" -Site $siteName -PhysicalPath $exPath -ApplicationPool $siteName
-    Write-Host "[OK] Aplicación eXcomercial creada en: $exPath" -ForegroundColor Green
+# Si se pasó una instancia específica
+if ($InstanceName -ne "") {
+    Configure-WptInstance -name $InstanceName -path $PhysicalPath
 } else {
-    Set-ItemProperty "IIS:\Sites\$siteName\eXcomercial" -name physicalPath -value $exPath
-    Write-Host "[OK] eXcomercial ya existía, ruta actualizada a: $exPath" -ForegroundColor Green
+    # Por defecto configurar ambas
+    Configure-WptInstance -name "WPTExecutor"
+    Configure-WptInstance -name "eXcomercial"
 }
 
 Write-Host "`n--- Proceso Finalizado ---" -ForegroundColor Cyan
-Pause
