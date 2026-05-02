@@ -12,7 +12,9 @@ namespace WPTServiciosDGII.Controllers;
 /// <summary>
 /// Endpoint de recepción de e-CF de la DGII.
 /// FASE 4: Integra DynamicDbResolver + NucleoRepository + CertificadoLoader.
-/// El certificado se obtiene de la tabla Nucleo usando el RNCEmisor del XML recibido.
+/// FLUJO: El XML llega de un proveedor externo (RNCEmisor) hacia una empresa cliente
+/// nuestra (RNCComprador). El ARECF lo firma el COMPRADOR con su propio certificado
+/// almacenado en la tabla Nucleo. El RNCEmisor es externo, no está en nuestra BD.
 /// Las credenciales NUNCA están hardcodeadas.
 /// </summary>
 [ApiController]
@@ -42,8 +44,8 @@ public class RecepcionController : ControllerBase
     /// Header opcional X-Db-Tenant para seleccionar la BD del cliente.
     /// </summary>
     [HttpPost("ecf")]
-    [Consumes("application/xml", "multipart/form-data", "application/octet-stream", "text/xml")]
-    public async Task<IActionResult> EnviarEcf()
+    [Consumes("application/xml", "multipart/form-data", "text/xml")]
+    public async Task<IActionResult> EnviarEcf(IFormFile? xmlFile)
     {
         string xmlContent = "";
         var ip = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
@@ -52,7 +54,13 @@ public class RecepcionController : ControllerBase
         try
         {
             // ── 1. Leer XML recibido ──────────────────────────────────────────
-            if (Request.HasFormContentType && Request.Form.Files.Count > 0)
+            if (xmlFile != null)
+            {
+                using var reader = new StreamReader(xmlFile.OpenReadStream());
+                xmlContent = await reader.ReadToEndAsync();
+                _logger.LogInformation("📁 XML recibido como archivo: {FileName}", xmlFile.FileName);
+            }
+            else if (Request.HasFormContentType && Request.Form.Files.Count > 0)
             {
                 using var reader = new StreamReader(Request.Form.Files[0].OpenReadStream());
                 xmlContent = await reader.ReadToEndAsync();
@@ -69,18 +77,20 @@ public class RecepcionController : ControllerBase
             // ── 2. Extraer campos del XML ──────────────────────────────────────
             var (rncEmisor, rncComprador, encf) = ExtraerCamposXml(xmlContent);
 
-            _logger.LogInformation("📨 e-CF recibido — RNCEmisor: {Emisor}, eNCF: {Encf}", rncEmisor, encf);
+            _logger.LogInformation("📨 e-CF recibido — RNCEmisor: {Emisor} → RNCComprador: {Comprador}, eNCF: {Encf}",
+                rncEmisor, rncComprador, encf);
 
-            // ── 3. FASE 4: Obtener certificado desde la BD externa ────────────
-            // Se busca el emisor en la tabla Nucleo usando el RNCEmisor del XML.
-            // Si no se encuentra → Fail-Fast (400)
-            if (string.IsNullOrWhiteSpace(rncEmisor))
-                return BadRequest(new { error = "El XML no contiene RNCEmisor válido." });
+            // ── 3. Obtener certificado del COMPRADOR desde la BD ──────────────
+            // El RNCEmisor es el proveedor externo que envió la factura.
+            // El RNCComprador es nuestra empresa cliente que RECIBE y debe firmar el ARECF.
+            // Por eso buscamos el certificado usando RNCComprador.
+            if (string.IsNullOrWhiteSpace(rncComprador))
+                return BadRequest(new { error = "El XML no contiene RNCComprador válido." });
 
-            Core.Dto.NucleoExternoDto? emisor = null;
+            Core.Dto.NucleoExternoDto? comprador = null;
             try
             {
-                emisor = await _nucleo.ObtenerPorRncAsync(rncEmisor, tenant);
+                comprador = await _nucleo.ObtenerPorRncAsync(rncComprador, tenant);
             }
             catch (KeyNotFoundException ex)
             {
@@ -88,11 +98,11 @@ public class RecepcionController : ControllerBase
                 return BadRequest(new { error = $"Tenant de BD no registrado: {ex.Message}" });
             }
 
-            if (emisor is null)
+            if (comprador is null)
             {
                 await _log.RegistrarAsync("Recepcion", "POST", "/fe/recepcion/api/ecf", ip,
-                    xmlContent, $"Emisor no encontrado en Nucleo: {rncEmisor}", "ERROR", 0);
-                return BadRequest(new { error = $"El RNCEmisor '{rncEmisor}' no está activo en el sistema." });
+                    xmlContent, $"Comprador no encontrado en Nucleo: {rncComprador}", "ERROR", 0);
+                return BadRequest(new { error = $"El RNCComprador '{rncComprador}' no está registrado o no está activo en el sistema." });
             }
 
             // ── 4. Construir ARECF ────────────────────────────────────────────
@@ -112,28 +122,30 @@ public class RecepcionController : ControllerBase
                 </ARECF>
                 """;
 
-            // ── 5. Firmar ARECF con el .p12 del emisor (carga-uso-dispose) ────
+            // ── 5. Firmar ARECF con el .p12 del COMPRADOR (cargado desde BD) ─
+            // El comprador firma el acuse de recibo con su propio certificado digital.
             string signedXml = responseXmlStr;
             try
             {
-                await _certLoader.EjecutarConCertificadoAsync(
-                    emisor.RutaCertificado,
-                    emisor.PasswordCertificado,
+                await _certLoader.EjecutarConCertificadoBytesAsync(
+                    comprador.CertificadoBytes,
+                    comprador.PasswordCertificado,
                     cert =>
                     {
                         signedXml = FirmarXml(responseXmlStr, cert);
                         return Task.CompletedTask;
                     });
 
-                _logger.LogInformation("✅ ARECF firmado correctamente para eNCF: {Encf}", encf);
+                _logger.LogInformation("✅ ARECF firmado por RNCComprador: {Comprador}, eNCF: {Encf}",
+                    rncComprador, encf);
             }
             catch (Exception ex)
             {
                 // Fail-Fast: si el certificado falla, no enviamos respuesta sin firmar
-                _logger.LogError(ex, "❌ Fallo al firmar ARECF para RNCEmisor: {Emisor}", rncEmisor);
+                _logger.LogError(ex, "❌ Fallo al firmar ARECF para RNCComprador: {Comprador}", rncComprador);
                 await _log.RegistrarAsync("Recepcion", "WARN", "Firma ARECF Falló", ip,
                     xmlContent, ex.Message, "ERROR", 0);
-                return StatusCode(400, new { error = "No se pudo firmar el ARECF. Verifique el certificado del emisor." });
+                return StatusCode(400, new { error = $"No se pudo firmar el ARECF. El comprador '{rncComprador}' no tiene certificado digital válido configurado." });
             }
 
             await _log.RegistrarAsync("Recepcion", "POST", "/fe/recepcion/api/ecf", ip,

@@ -7,22 +7,26 @@ namespace WPTServiciosDGII.Core.Dto;
 /// </summary>
 public class NucleoExternoDto
 {
-    /// <summary>RNC del emisor (sin guiones).</summary>
+    /// <summary>ID interno del registro en la tabla Nucleo.</summary>
+    public int NucleoID { get; set; }
+
+    /// <summary>RNC del emisor (sin guiones). Columna: NucleoRNC.</summary>
     public string Rnc { get; set; } = string.Empty;
 
-    /// <summary>Estado del registro (ej: "A" = Activo).</summary>
+    /// <summary>Estado del registro. Columna: NucleoEstado. ("A" = Activo).</summary>
     public string Estado { get; set; } = string.Empty;
 
     /// <summary>
-    /// Ruta absoluta al archivo .p12 del certificado del emisor.
-    /// Mapeado desde la columna configurada en NucleoConfig:ColumnRutaCertificado.
+    /// Bytes del archivo .p12 del emisor (almacenado como varbinary en BD).
+    /// Columna: NucleoCertificadoDigital.
+    /// NUNCA se loggea ni se expone en respuestas de API.
     /// </summary>
-    public string RutaCertificado { get; set; } = string.Empty;
+    public byte[] CertificadoBytes { get; set; } = [];
 
     /// <summary>
     /// Contraseña del archivo .p12.
     /// NUNCA se loggea ni se expone en respuestas de API.
-    /// Mapeado desde la columna configurada en NucleoConfig:ColumnPasswordCertificado.
+    /// Columna: NucleoPasswordDigital.
     /// </summary>
     public string PasswordCertificado { get; set; } = string.Empty;
 }

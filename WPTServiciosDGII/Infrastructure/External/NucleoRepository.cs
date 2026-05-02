@@ -19,6 +19,7 @@ public class NucleoRepository : INucleoRepository
 
     // Valores de configuración cargados una vez al construir
     private readonly string _tableName;
+    private readonly string _colId;
     private readonly string _colRnc;
     private readonly string _colEstado;
     private readonly string _colRutaCert;
@@ -35,12 +36,13 @@ public class NucleoRepository : INucleoRepository
         _logger         = logger;
 
         // Mapeo de columnas — configurable sin recompilar
-        _tableName       = config["NucleoConfig:TableName"]              ?? "Nucleo";
-        _colRnc          = config["NucleoConfig:ColumnRnc"]              ?? "Rnc";
-        _colEstado       = config["NucleoConfig:ColumnEstado"]           ?? "Estado";
-        _colRutaCert     = config["NucleoConfig:ColumnRutaCertificado"]  ?? "RutaCertificado";
-        _colPasswordCert = config["NucleoConfig:ColumnPasswordCertificado"] ?? "PasswordCertificado";
-        _estadoActivo    = config["NucleoConfig:EstadoActivo"]           ?? "A";
+        _tableName       = config["NucleoConfig:TableName"]                  ?? "Nucleo";
+        _colId           = config["NucleoConfig:ColumnId"]                   ?? "NucleoID";
+        _colRnc          = config["NucleoConfig:ColumnRnc"]                  ?? "NucleoRNC";
+        _colEstado       = config["NucleoConfig:ColumnEstado"]               ?? "NucleoEstado";
+        _colRutaCert     = config["NucleoConfig:ColumnRutaCertificado"]      ?? "NucleoCertificadoDigital";
+        _colPasswordCert = config["NucleoConfig:ColumnPasswordCertificado"]  ?? "NucleoPasswordDigital";
+        _estadoActivo    = config["NucleoConfig:EstadoActivo"]               ?? "A";
     }
 
     /// <inheritdoc/>
@@ -57,9 +59,10 @@ public class NucleoRepository : INucleoRepository
         // Query con columnas dinámicas pero parámetros seguros
         var sql = $"""
             SELECT
+                [{_colId}]           AS {nameof(NucleoExternoDto.NucleoID)},
                 [{_colRnc}]          AS {nameof(NucleoExternoDto.Rnc)},
                 [{_colEstado}]       AS {nameof(NucleoExternoDto.Estado)},
-                [{_colRutaCert}]     AS {nameof(NucleoExternoDto.RutaCertificado)},
+                [{_colRutaCert}]     AS {nameof(NucleoExternoDto.CertificadoBytes)},
                 [{_colPasswordCert}] AS {nameof(NucleoExternoDto.PasswordCertificado)}
             FROM [{_tableName}]
             WHERE [{_colRnc}] = @Rnc

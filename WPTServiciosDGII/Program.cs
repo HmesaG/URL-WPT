@@ -91,14 +91,14 @@ using (var scope = app.Services.CreateScope())
 }
 
 // ── Pipeline HTTP ─────────────────────────────────────────────────────────────
-    app.UseSwagger();
-    app.UseSwaggerUI(c =>
-    {
-        c.SwaggerEndpoint("../swagger/v1/swagger.json", "WPT Servicios DGII v1");
-        c.RoutePrefix = "swagger";
-    });
+app.UseSwagger();
+app.UseSwaggerUI(c =>
+{
+    c.SwaggerEndpoint("v1/swagger.json", "WPT Servicios DGII v1");
+    c.RoutePrefix = "swagger";
+});
 
-app.UseHttpsRedirection();
+// app.UseHttpsRedirection(); // Desactivado para evitar conflictos de puertos en IIS (cloud.wptsoftwares.net)
 app.UseCors("DgiiServers");   // Aplicar CORS permisivo para que DGII pueda llamar a los endpoints
 app.UseAuthorization();
 app.MapControllers();
